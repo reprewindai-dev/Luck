@@ -1,116 +1,110 @@
-# StudioGrade Kits
+# ClipCraft Studio - Cloudflare Pages Deployment
 
-One-tap music content engine that converts uploaded audio or video files into complete, ready-to-post content packages for short-form music platforms.
+## Quick Deploy to Cloudflare Pages
 
-## Features
+1. Go to https://dash.cloudflare.com/
+2. Navigate to: **Workers & Pages** → **Create application** → **Pages** → **Upload assets**
+3. **Extract this ZIP** and drag the entire `dist/` folder (or its contents) to the upload area
+4. Click **Deploy site**
 
-- **One-Tap Upload**: Single action to upload audio (MP3, WAV, M4A) or video (MP4, MOV, WEBM) files
-- **AI Processing Pipeline**:
-  - Audio transcription with GPT-4O-TRANSCRIBE
-  - **Strict song structure enforcement** (Intro 4 bars, Verse 1 16 bars, Hook 8 bars, Verse 2 8-12 bars, Outro 4 bars)
-  - **Lyric authenticity preservation** - 85-90% from original transcription, no generic rewrites
-  - **Transcription quality failsafe** - preserves intelligible lines, labels inferred content
-  - Clip detection with emotional peak identification
-  - Content generation matched to emotional tone
-  - **Thumbnail variation enforcement** - unique compositions per upload, no duplicates
-- **Cover Art Generation**:
-  - **Multi-API support**: OpenAI GPT-Image-1 or Google Gemini
-  - **Local fallback**: Branded SVG covers when no API is available
-  - **Regenerate button**: Generate new cover art with composition rotation
-  - **API state detection**: Disabled regenerate button with helper text when no API
-  - 6 composition directives rotate on each regeneration
-  - Cache-busting URLs prevent stale images
-- **Complete Posting Kit**:
-  - Posting decision (POST FULL / CLIP & POST / HOLD)
-  - Best clip timestamps with hook points
-  - **Inline audio preview** - tap to preview clips directly in the app
-  - Copy-ready content (title, caption, hashtags, on-screen text, hook line)
-  - Generated thumbnail with download (emotionally cohesive with lyrics)
-  - Finalized lyrics with section markers (shows both raw transcript and structured song)
-  - **Scrollable lyrics display** - fixed height container with vertical scroll
-  - Timing guidance for optimal posting
-- **Download & Save**:
-  - Save audio to device
-  - Save cover art to photos
-- **Anti-Cache System**:
-  - Unique runId per processing run
-  - File fingerprint for thumbnail variation
-  - Hard state reset between uploads
-  - Cache-busting query strings on cover URLs
+## Required: Configure Backend URL
 
-## AI Constraints
+After deployment, set the backend environment variable:
 
-### Song Structure (Mandatory)
-- Intro: 4 bars
-- Verse 1: 16 bars
-- Hook: 8 bars
-- Verse 2: 8-12 bars
-- Outro: 4 bars
+### Method 1: Via Cloudflare Dashboard (Recommended)
+1. Go to your Pages project → **Settings** → **Environment variables**
+2. Add variable:
+   - **Name:** `EXPO_PUBLIC_BACKEND_URL`
+   - **Value:** `https://dry-firefly-f8b4.reprewindai.workers.dev` (or your backend URL)
+3. **Redeploy** for changes to take effect
 
-### Lyric Rules
-- 85-90% of lines must come from transcription
-- New lines only to bridge sections (labeled [ADDED LINE])
-- Inferred lines labeled [INFERRED LINE]
-- Preserves slang, pacing, imperfections
-- Never rewrites into generic motivational rap
+### Method 2: Runtime Configuration (No Redeploy Needed)
+If Cloudflare doesn't inject env vars at runtime:
+1. Open your deployed site
+2. You'll see "Backend Not Configured" modal
+3. Click **"Set Backend URL"**
+4. Enter: `https://dry-firefly-f8b4.reprewindai.workers.dev`
+5. URL saves to localStorage and app reloads
 
-### Lyric-Mastering Cohesion
-- Introspective/tired lyrics → muted tones, soft shadows
-- Aggressive/confident lyrics → bold contrasts, sharp highlights
-- Content captions match emotional tone
+## Features Included
 
-### Thumbnail Variation
-- 6 composition directives (close-up, wide, centered, asymmetrical, diagonal, minimalist)
-- Unique variation key per generation (runId + fileFingerprint + timestamp)
-- Color palette matched to emotional tone
-- Composition rotates on each regeneration
+✅ **iOS Safari Compatible**
+- Proper .m4a, .mp3, .wav file handling
+- Immediate upload after file selection
+- MIME type auto-detection
 
-## Tech Stack
+✅ **Debug Mode**
+- Add `?debug=1` to URL
+- Shows live diagnostics:
+  - Backend URL resolution
+  - File upload progress
+  - Response status codes
+  - Error messages
 
-### Frontend
-- Expo SDK 53 with React Native
-- NativeWind (Tailwind CSS)
-- React Query for server state
-- React Native Reanimated for animations
-- Expo Router for navigation
-- Expo AV for audio playback
+✅ **Multi-Source Backend Configuration**
+Priority order:
+1. `window.__BACKEND_URL__` (global variable)
+2. `localStorage["BACKEND_URL"]` (browser storage)
+3. `EXPO_PUBLIC_BACKEND_URL` (env var)
+4. `EXPO_PUBLIC_API_BASE_URL` (env var fallback)
+5. `EXPO_PUBLIC_VIBECODE_BACKEND_URL` (legacy fallback)
 
-### Backend
-- Bun + Hono server
-- Prisma ORM with SQLite
-- Better Auth for authentication
-- OpenAI APIs (GPT-5.2, GPT-4O-TRANSCRIBE, GPT-Image-1)
-- Google Gemini API (fallback for image generation)
+## File Structure
 
-## Design
+```
+dist/
+├── index.html              # App entry point
+├── _expo/
+│   └── static/
+│       ├── css/            # Stylesheets
+│       └── js/             # JavaScript bundles (5.25 MB)
+├── assets/                 # Images and fonts
+└── _redirects              # Netlify redirects (optional, not needed for Cloudflare)
+```
 
-**Studio Gold Theme**
-- Deep charcoal backgrounds (#0A0A0B, #111113)
-- Warm gold/amber accents (#D4A853)
-- Professional recording studio aesthetic
-- Smooth animations and haptic feedback
+## Testing Locally
 
-## Screens
+```bash
+# Extract ZIP
+unzip ClipCraft-Studio-PAGES-DEPLOY.zip
 
-1. **Upload Screen** (`/`) - Upload audio/video with animated progress and stage indicators
-2. **Results Screen** (`/results`) - Complete content kit with:
-   - Recommendation banner
-   - Quick action buttons (Save Audio, Save Cover)
-   - Cover art preview with Regenerate button (or helper text if no API)
-   - Playable clip previews with progress bars
-   - Copy-ready content package
-   - Scrollable lyrics section with raw transcript + structured song
-   - Posting timing guidance
+# Serve locally
+cd dist/
+python3 -m http.server 8000
 
-## API Endpoints
+# Open: http://localhost:8000
+```
 
-- `POST /api/project/upload` - Upload audio/video file (25MB limit)
-- `GET /api/project/:id` - Get project status and results (includes `hasImageAPI` flag)
-- `POST /api/project/:id/process` - Start AI processing pipeline
-- `POST /api/project/:id/regenerate-thumbnail` - Generate new thumbnail with composition rotation
+**Note:** Use runtime configuration (Method 2) when testing locally.
 
-## Environment Variables
+## Troubleshooting
 
-Set in the Vibecode ENV tab:
-- `EXPO_PUBLIC_VIBECODE_OPENAI_API_KEY` - OpenAI API key for AI features
-- `EXPO_PUBLIC_VIBECODE_GOOGLE_API_KEY` - Google API key for Gemini image generation (fallback)
+**Problem:** "Backend Not Configured" error
+**Solution:** Use Method 2 (runtime configuration) or set env var and redeploy
+
+**Problem:** CORS errors
+**Solution:** Backend must allow requests from your Cloudflare Pages domain
+
+**Problem:** Upload doesn't work on iOS Safari
+**Solution:** 
+1. Enable debug mode: `?debug=1`
+2. Check console logs
+3. Verify backend URL is correct
+
+## Backend API Endpoint
+
+The app uploads files to: `${BACKEND_URL}/api/project/upload`
+
+Expected response format:
+```json
+{
+  "projectId": "abc123",
+  "status": "processing"
+}
+```
+
+## Support
+
+- Add `?debug=1` to URL for diagnostics
+- Check browser console for detailed logs
+- Verify backend is accessible from browser
